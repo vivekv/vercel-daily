@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
+
 interface BreakingNews {
   headline: string;
-  url: string;
-  timestamp: string;
+  summary: string;
+  articleId: string;
+  category: string;
+  publishedAt: string;
+  urgent: boolean;
 }
 
 export function BreakingNewsBanner() {
@@ -13,8 +18,11 @@ export function BreakingNewsBanner() {
 
   useEffect(() => {
     fetch("/api/breaking-news")
-      .then((res) => res.json())
-      .then((data: BreakingNews) => setNews(data))
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data: BreakingNews | null) => setNews(data))
       .catch(() => setNews(null));
   }, []);
 
@@ -26,9 +34,9 @@ export function BreakingNewsBanner() {
         <span className="shrink-0 rounded bg-primary-foreground px-2 py-0.5 text-xs font-bold uppercase text-destructive">
           Breaking News
         </span>
-        <a href={news.url} className="truncate text-sm font-medium hover:underline">
+        <Link href={`/articles/${news.articleId}`} className="truncate text-sm font-medium hover:underline">
           {news.headline}
-        </a>
+        </Link>
       </div>
     </div>
   );

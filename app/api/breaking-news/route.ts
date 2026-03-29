@@ -1,22 +1,44 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const token = process.env.BREAKING_NEWS_API_TOKEN;
+  const baseUrl = process.env.VERCEL_API_BASE_URL;
+  const token = process.env.VERCEL_API_TOKEN;
 
-  if (!token) {
+  if (!baseUrl || !token) {
     return NextResponse.json(
       { error: "Breaking news API is not configured" },
       { status: 503 }
     );
   }
 
-  // Placeholder response until the external API is connected
-  const breakingNews = {
-    headline:
-      "Next.js 16 officially released with groundbreaking performance improvements and new rendering strategies",
-    url: "#",
-    timestamp: new Date().toISOString(),
-  };
+  const res = await fetch(`${baseUrl}/breaking-news`, {
+    headers: { "x-vercel-protection-bypass": token },
+  });
 
-  return NextResponse.json(breakingNews);
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "Failed to fetch breaking news" },
+      { status: res.status }
+    );
+  }
+
+  const json = await res.json();
+
+  if (!json.success) {
+    return NextResponse.json(
+      { error: "Breaking news unavailable" },
+      { status: 502 }
+    );
+  }
+
+  const { headline, summary, articleId, category, publishedAt, urgent } = json.data;
+
+  return NextResponse.json({
+    headline,
+    summary,
+    articleId,
+    category,
+    publishedAt,
+    urgent,
+  });
 }

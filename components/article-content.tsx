@@ -12,24 +12,27 @@ import {
 } from "@/components/ui/card";
 
 interface Article {
+  id: string;
+  title: string;
   slug: string;
-  headline: string;
+  excerpt: string;
+  content: unknown[];
   category: string;
-  publishDate: string;
-  author: string;
-  imageSrc: string;
-  imageAlt: string;
-  body: string;
+  author: { name: string; avatar: string } | null;
+  image: string;
+  publishedAt: string;
+  featured: boolean;
+  tags: string[];
 }
 
 interface TrendingArticle {
   id: string;
-  headline: string;
-  category: string;
-  publishDate: string;
+  title: string;
   slug: string;
-  imageSrc: string;
-  imageAlt: string;
+  excerpt: string;
+  category: string;
+  image: string;
+  publishedAt: string;
 }
 
 export function ArticleContent({ params }: { params: Promise<{ slug: string }> }) {
@@ -40,23 +43,36 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/articles/${encodeURIComponent(slug)}`)
+    const articlePromise = fetch(`/api/articles/${encodeURIComponent(slug)}`)
       .then((res) => {
         if (!res.ok) {
           setNotFound(true);
           return null;
         }
-        return res.json();
+        return res.json() as Promise<Article>;
       })
-      .then((data: Article | null) => {
-        if (data) setArticle(data);
-      })
-      .catch(() => setNotFound(true));
+      .catch(() => {
+        setNotFound(true);
+        return null;
+      });
 
-    fetch("/api/trending-articles")
-      .then((res) => res.json())
-      .then((data: TrendingArticle[]) => setTrending(data))
-      .catch(() => setTrending([]));
+    const trendingPromise = fetch("/api/trending-articles")
+      .then((res) => res.json() as Promise<TrendingArticle[]>)
+      .catch(() => [] as TrendingArticle[]);
+
+    //Run both requests in parallel and remove the current article from trending to avoid duplication  
+    Promise.all([articlePromise, trendingPromise]).then(
+      ([articleData, trendingData]) => {
+        if (articleData) {
+          setArticle(articleData);
+          setTrending(
+            trendingData.filter((item) => item.id !== articleData.id)
+          );
+        } else {
+          setTrending(trendingData);
+        }
+      }
+    );
   }, [slug]);
 
   if (notFound) {
@@ -89,8 +105,8 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
           <div className="mb-4 flex items-center gap-3 text-sm text-muted-foreground">
             <span className="font-semibold text-primary">{article.category}</span>
             <span>·</span>
-            <time dateTime={article.publishDate}>
-              {new Date(article.publishDate).toLocaleDateString("en-US", {
+            <time dateTime={article.publishedAt}>
+              {new Date(article.publishedAt).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",
@@ -98,11 +114,13 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
             </time>
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            {article.headline}
+            {article.title}
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            By {article.author}
-          </p>
+          {article.author && (
+            <p className="mt-4 text-lg text-muted-foreground">
+              By {article.author.name}
+            </p>
+          )}
         </div>
       </header>
 
@@ -111,8 +129,8 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
         <div className="mx-auto max-w-4xl px-16 py-8">
           <div className="relative aspect-video overflow-hidden rounded-lg">
             <Image
-              src={article.imageSrc}
-              alt={article.imageAlt}
+              src={article.image}
+              alt={article.title}
               fill
               className="object-cover"
               priority
@@ -124,26 +142,35 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
       {/* Article Body */}
       <article className="bg-background px-16 py-12">
         <div className="prose prose-neutral mx-auto max-w-3xl text-foreground">
-          {article.body.split("\n\n").map((paragraph, i) => {
-            if (paragraph.startsWith("### ")) {
+          {article.excerpt && (
+            <p className="mb-6 text-lg leading-relaxed text-muted-foreground">
+              {article.excerpt}
+            </p>
+          )}
+          {article.content.map((block, i) => {
+            if (typeof block === "string") {
               return (
-                <h3 key={i} className="mt-8 mb-4 text-xl font-semibold text-foreground">
-                  {paragraph.replace("### ", "")}
-                </h3>
+                <p key={i} className="mb-4 leading-relaxed text-muted-foreground">
+                  {block}
+                </p>
               );
             }
-            if (paragraph.startsWith("## ")) {
+            const b = block as { type?: string; text?: string };
+            if (b.type === "heading") {
               return (
                 <h2 key={i} className="mt-10 mb-4 text-2xl font-bold text-foreground">
-                  {paragraph.replace("## ", "")}
+                  {b.text}
                 </h2>
               );
             }
-            return (
-              <p key={i} className="mb-4 leading-relaxed text-muted-foreground">
-                {paragraph}
-              </p>
-            );
+            if (b.type === "paragraph" && b.text) {
+              return (
+                <p key={i} className="mb-4 leading-relaxed text-muted-foreground">
+                  {b.text}
+                </p>
+              );
+            }
+            return null;
           })}
         </div>
       </article>
@@ -188,8 +215,8 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
                   <Card className="h-full transition-shadow group-hover:shadow-lg">
                     <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
                       <Image
-                        src={item.imageSrc}
-                        alt={item.imageAlt}
+                        src={item.image}
+                        alt={item.title}
                         fill
                         className="object-cover"
                       />
@@ -200,8 +227,8 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
                           {item.category}
                         </span>
                         <span className="mx-2">·</span>
-                        <time dateTime={item.publishDate}>
-                          {new Date(item.publishDate).toLocaleDateString(
+                        <time dateTime={item.publishedAt}>
+                          {new Date(item.publishedAt).toLocaleDateString(
                             "en-US",
                             {
                               month: "short",
@@ -211,7 +238,7 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
                         </time>
                       </CardDescription>
                       <CardTitle className="line-clamp-2 text-sm group-hover:underline">
-                        {item.headline}
+                        {item.title}
                       </CardTitle>
                     </CardHeader>
                   </Card>

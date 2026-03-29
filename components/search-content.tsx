@@ -95,8 +95,6 @@ export function SearchContent() {
         .catch(() => setArticles([]))
         .finally(() => setLoading(false));
     }
-    // Only run on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (value: string) => {
