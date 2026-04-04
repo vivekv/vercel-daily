@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { SubscribeButton } from "@/components/subscribe-button";
 
 export function Header() {
   return (
@@ -29,6 +31,11 @@ export function Header() {
             Search
           </Link>
         </nav>
+        <div className="ml-auto">
+          <Suspense>
+            <SubscribeButton showUnsubscribe />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

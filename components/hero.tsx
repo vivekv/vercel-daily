@@ -1,4 +1,8 @@
+import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { SubscribeButton } from "@/components/subscribe-button";
 
 interface HeroProps {
   headline: string;
@@ -18,6 +22,12 @@ export function Hero({ headline, description, imageSrc, imageAlt }: HeroProps) {
           <p className="text-lg text-muted-foreground">
             {description}
           </p>
+          <div className="flex gap-3 pt-2">
+            <Button nativeButton={false} render={<Link href="/search" />}>Browse Articles</Button>
+            <Suspense>
+              <SubscribeButton />
+            </Suspense>
+          </div>
         </div>
         <div className="relative aspect-video overflow-hidden rounded-lg">
           <Image
