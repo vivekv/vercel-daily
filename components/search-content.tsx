@@ -14,17 +14,29 @@ import {
 
 interface Article {
   id: string;
-  headline: string;
+  title: string;
+  slug: string;
+  excerpt: string;
   category: string;
-  publishDate: string;
-  imageSrc: string;
-  imageAlt: string;
-  href: string;
+  author: { name: string; avatar: string } | null;
+  image: string;
+  publishedAt: string;
+  featured: boolean;
+  tags: string[];
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 interface SearchResponse {
   articles: Article[];
-  categories: string[];
+  pagination: Pagination;
 }
 
 export function SearchContent() {
@@ -34,7 +46,8 @@ export function SearchContent() {
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState(searchParams.get("category") ?? "");
   const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ slug: string; name: string }[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasSearched, setHasSearched] = useState(
     !!searchParams.get("q") || !!searchParams.get("category")
@@ -60,14 +73,13 @@ export function SearchContent() {
       updateUrl(q, cat);
       try {
         const params = new URLSearchParams();
-        if (q) params.set("q", q);
+        if (q) params.set("search", q);
         if (cat) params.set("category", cat);
+        params.set("limit", "5");
         const res = await fetch(`/api/search?${params.toString()}`);
         const data: SearchResponse = await res.json();
         setArticles(data.articles);
-        if (data.categories.length > 0) {
-          setCategories(data.categories);
-        }
+        setPagination(data.pagination);
       } catch {
         setArticles([]);
       } finally {
@@ -86,15 +98,21 @@ export function SearchContent() {
     } else {
       // Load recent articles as default
       setLoading(true);
-      fetch("/api/search")
+      fetch("/api/search?limit=5")
         .then((res) => res.json())
         .then((data: SearchResponse) => {
           setArticles(data.articles);
-          setCategories(data.categories);
+          setPagination(data.pagination);
         })
         .catch(() => setArticles([]))
         .finally(() => setLoading(false));
     }
+
+    // Fetch categories
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data: { slug: string; name: string }[]) => setCategories(data))
+      .catch(() => setCategories([]));
   }, []);
 
   const handleInputChange = (value: string) => {
@@ -141,8 +159,8 @@ export function SearchContent() {
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+              <option key={cat.slug} value={cat.slug}>
+                {cat.name}
               </option>
             ))}
           </select>
@@ -186,7 +204,7 @@ export function SearchContent() {
             {/* Section heading */}
             <h2 className="mb-6 text-lg font-medium text-muted-foreground">
               {hasSearched
-                ? `${articles.length} result${articles.length !== 1 ? "s" : ""} found`
+                ? `${pagination?.total ?? articles.length} result${(pagination?.total ?? articles.length) !== 1 ? "s" : ""} found`
                 : "Recent Articles"}
             </h2>
 
@@ -207,14 +225,14 @@ export function SearchContent() {
                 {articles.map((article) => (
                   <Link
                     key={article.id}
-                    href={article.href}
+                    href={`/articles/${article.slug}`}
                     className="group"
                   >
                     <Card className="h-full transition-shadow group-hover:shadow-lg">
                       <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
                         <Image
-                          src={article.imageSrc}
-                          alt={article.imageAlt}
+                          src={article.image}
+                          alt={article.title}
                           fill
                           className="object-cover"
                         />
@@ -225,9 +243,9 @@ export function SearchContent() {
                             {article.category}
                           </span>
                           <span className="mx-2">·</span>
-                          <time dateTime={article.publishDate}>
+                          <time dateTime={article.publishedAt}>
                             {new Date(
-                              article.publishDate
+                              article.publishedAt
                             ).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
@@ -236,7 +254,7 @@ export function SearchContent() {
                           </time>
                         </CardDescription>
                         <CardTitle className="line-clamp-2 group-hover:underline">
-                          {article.headline}
+                          {article.title}
                         </CardTitle>
                       </CardHeader>
                     </Card>
