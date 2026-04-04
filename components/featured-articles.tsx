@@ -13,21 +13,24 @@ import {
 
 interface Article {
   id: string;
-  headline: string;
+  title: string;
+  slug: string;
+  excerpt: string;
   category: string;
-  publishDate: string;
-  imageSrc: string;
-  imageAlt: string;
-  href: string;
+  author: { name: string; avatar: string } | null;
+  image: string;
+  publishedAt: string;
+  featured: boolean;
+  tags: string[];
 }
 
 export function FeaturedArticles() {
   const [articles, setArticles] = useState<Article[]>([]);
 
   useEffect(() => {
-    fetch("/api/featured-articles")
+    fetch("/api/search?featured=true&limit=6")
       .then((res) => res.json())
-      .then((data: Article[]) => setArticles(data))
+      .then((data: { articles: Article[] }) => setArticles(data.articles))
       .catch(() => setArticles([]));
   }, []);
 
@@ -40,12 +43,12 @@ export function FeaturedArticles() {
       </h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {articles.map((article) => (
-          <Link key={article.id} href={article.href} className="group">
+          <Link key={article.id} href={`/articles/${article.slug}`} className="group">
             <Card className="h-full transition-shadow group-hover:shadow-lg">
               <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
                 <Image
-                  src={article.imageSrc}
-                  alt={article.imageAlt}
+                  src={article.image}
+                  alt={article.title}
                   fill
                   className="object-cover"
                 />
@@ -56,8 +59,8 @@ export function FeaturedArticles() {
                     {article.category}
                   </span>
                   <span className="mx-2">·</span>
-                  <time dateTime={article.publishDate}>
-                    {new Date(article.publishDate).toLocaleDateString("en-US", {
+                  <time dateTime={article.publishedAt}>
+                    {new Date(article.publishedAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
@@ -65,7 +68,7 @@ export function FeaturedArticles() {
                   </time>
                 </CardDescription>
                 <CardTitle className="line-clamp-2 group-hover:underline">
-                  {article.headline}
+                  {article.title}
                 </CardTitle>
               </CardHeader>
             </Card>
