@@ -1,9 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
@@ -37,67 +35,12 @@ interface TrendingArticle {
   publishedAt: string;
 }
 
-export function ArticleContent({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+interface ArticleContentProps {
+  article: Article;
+}
+
+export function ArticleContent({ article }: ArticleContentProps) {
   const { subscribed } = useSubscription();
-  const [article, setArticle] = useState<Article | null>(null);
-  const [trending, setTrending] = useState<TrendingArticle[]>([]);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    const articlePromise = fetch(`/api/articles/${encodeURIComponent(slug)}`)
-      .then((res) => {
-        if (!res.ok) {
-          setNotFound(true);
-          return null;
-        }
-        return res.json() as Promise<Article>;
-      })
-      .catch(() => {
-        setNotFound(true);
-        return null;
-      });
-
-    const trendingPromise = fetch("/api/trending-articles")
-      .then((res) => res.json() as Promise<TrendingArticle[]>)
-      .catch(() => [] as TrendingArticle[]);
-
-    //Run both requests in parallel and remove the current article from trending to avoid duplication  
-    Promise.all([articlePromise, trendingPromise]).then(
-      ([articleData, trendingData]) => {
-        if (articleData) {
-          setArticle(articleData);
-          setTrending(
-            trendingData.filter((item) => item.id !== articleData.id)
-          );
-        } else {
-          setTrending(trendingData);
-        }
-      }
-    );
-  }, [slug]);
-
-  if (notFound) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-foreground">404</h1>
-          <p className="mt-2 text-muted-foreground">Article not found</p>
-          <Link href="/" className="mt-4 inline-block text-primary hover:underline">
-            Back to Home
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!article) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col">
@@ -215,57 +158,6 @@ export function ArticleContent({ params }: { params: Promise<{ slug: string }> }
                   <SubscribeButton />
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Trending Articles */}
-      {trending.length > 0 && (
-        <section className="bg-background px-16 py-12">
-          <div className="mx-auto max-w-5xl">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">
-              Trending Articles
-            </h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {trending.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/articles/${item.slug}`}
-                  className="group"
-                >
-                  <Card className="h-full transition-shadow group-hover:shadow-lg">
-                    <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardDescription>
-                        <span className="font-semibold text-primary">
-                          {item.category}
-                        </span>
-                        <span className="mx-2">·</span>
-                        <time dateTime={item.publishedAt}>
-                          {new Date(item.publishedAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                            }
-                          )}
-                        </time>
-                      </CardDescription>
-                      <CardTitle className="line-clamp-2 text-sm group-hover:underline">
-                        {item.title}
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              ))}
             </div>
           </div>
         </section>
