@@ -9,11 +9,12 @@ interface HeroProps {
   description: string;
   imageSrc: string;
   imageAlt: string;
+  mainCta: string;
 }
 
-export function Hero({ headline, description, imageSrc, imageAlt }: HeroProps) {
+export function Hero({ headline, description, imageSrc, imageAlt, mainCta }: HeroProps) {
   return (
-    <section className="w-full border-b border-border bg-background">
+    <section className="w-full border-b border-border bg-white">
       <div className="grid w-full gap-8 px-16 py-16 md:grid-cols-2 md:items-center md:gap-12">
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
@@ -23,6 +24,9 @@ export function Hero({ headline, description, imageSrc, imageAlt }: HeroProps) {
             {description}
           </p>
           <div className="flex gap-3 pt-2">
+            <Link href={mainCta} className="inline-block">
+              <Button>Read More</Button>
+            </Link>
             <Button nativeButton={false} render={<Link href="/search" />}>Browse Articles</Button>
             <Suspense>
               <SubscribeButton />
