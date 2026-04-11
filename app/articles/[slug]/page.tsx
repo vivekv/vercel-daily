@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { cacheLife, cacheTag } from "next/cache";
 import { Suspense } from "react";
 import { ArticleContent } from "@/components/article-content";
-import { ArticleLoading } from "@/components/article-loading";
 import { TrendingArticles } from "@/components/trending-articles";
 
 interface Article {
@@ -100,9 +99,7 @@ export default function ArticlePage({
 }) {
   return (
     <>
-      <Suspense fallback={<ArticleLoading />}>
-        <ArticlePageContent params={params} />
-      </Suspense>
+      <ArticlePageContent params={params} />
       <Suspense>
         <TrendingSection params={params} />
       </Suspense>
