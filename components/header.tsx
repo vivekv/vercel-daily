@@ -33,7 +33,7 @@ export function Header() {
         </nav>
         <div className="ml-auto">
           <Suspense>
-            <SubscribeButton showUnsubscribe />
+            <SubscribeButton showUnsubscribe refreshOnToggle />
           </Suspense>
         </div>
       </div>

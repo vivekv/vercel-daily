@@ -24,12 +24,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const toggle = useCallback(() => {
-    setSubscribed((prev) => {
-      const next = !prev;
-      setCookie("vercel-daily-subscribed", String(next));
-      return next;
-    });
-  }, []);
+    const next = !subscribed;
+    setCookie("vercel-daily-subscribed", String(next));
+    setSubscribed(next);
+    return next;
+  }, [subscribed]);
 
   return (
     <SubscriptionContext value={{ subscribed, toggle }}>

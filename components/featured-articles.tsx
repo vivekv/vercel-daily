@@ -74,6 +74,7 @@ export function FeaturedArticles() {
                   src={article.image}
                   alt={article.title}
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover"
                 />
               </div>

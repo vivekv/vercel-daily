@@ -36,7 +36,7 @@ export async function ArticleBody({ article }: { article: Article }) {
                 Get unlimited access to all Vercel Daily articles.
               </p>
               <div className="mt-6">
-                <SubscribeButton refreshOnSubscribe />
+                <SubscribeButton refreshOnToggle />
               </div>
             </div>
           </div>

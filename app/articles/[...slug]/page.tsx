@@ -107,13 +107,7 @@ export async function generateMetadata({
       publishedTime: article.publishedAt,
       authors: article.author ? [article.author.name] : undefined,
       images: [{ url: article.image, alt: article.title }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: article.title,
-      description: article.excerpt,
-      images: [article.image],
-    },
+    }
   };
 }
 

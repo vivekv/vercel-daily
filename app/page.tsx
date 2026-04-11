@@ -1,7 +1,18 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Hero } from "@/components/hero";
 import { BreakingNewsBanner } from "@/components/breaking-news-banner";
 import { FeaturedArticles } from "@/components/featured-articles";
+
+export const metadata: Metadata = {
+  title: "Vercel Daily – The Latest in Web Development",
+  description: "Stay up to date with the latest news, tutorials, and insights on Vercel, Next.js, and modern web development.",
+  openGraph: {
+    title: "Vercel Daily – The Latest in Web Development",
+    description: "Stay up to date with the latest news, tutorials, and insights on Vercel, Next.js, and modern web development.",
+    type: "website",
+  },
+};
 
 export default function Home() {
   return (
