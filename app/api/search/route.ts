@@ -30,9 +30,11 @@ export async function GET(request: NextRequest) {
   const featured = searchParams.get("featured");
   if (featured) params.set("featured", featured);
 
+  //Caching the upstream request - when featured is set 
   const qs = params.toString();
   const res = await fetch(`${baseUrl}/articles${qs ? `?${qs}` : ""}`, {
     headers: { "x-vercel-protection-bypass": token },
+    ...(featured ? { next: { revalidate: 3600 } } : {}),
   });
 
   if (!res.ok) {
@@ -51,8 +53,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     articles: json.data,
     pagination: json.meta.pagination,
   });
+
+  // Caching for all users when featured is set 
+  if (featured) {
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=60");
+  }
+
+  return response;
 }
