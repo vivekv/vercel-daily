@@ -13,6 +13,7 @@ export async function GET() {
 
   const res = await fetch(`${baseUrl}/breaking-news`, {
     headers: { "x-vercel-protection-bypass": token },
+    next: { revalidate: 180 },
   });
 
   if (!res.ok) {
@@ -33,7 +34,7 @@ export async function GET() {
 
   const { headline, summary, articleId, category, publishedAt, urgent } = json.data;
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     headline,
     summary,
     articleId,
@@ -41,4 +42,8 @@ export async function GET() {
     publishedAt,
     urgent,
   });
+
+  response.headers.set("Cache-Control", "public, s-maxage=180, stale-while-revalidate=60");
+
+  return response;
 }

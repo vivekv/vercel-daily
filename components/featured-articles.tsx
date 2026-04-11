@@ -26,13 +26,37 @@ interface Article {
 
 export function FeaturedArticles() {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/search?featured=true&limit=6")
       .then((res) => res.json())
       .then((data: { articles: Article[] }) => setArticles(data.articles))
-      .catch(() => setArticles([]));
+      .catch(() => setArticles([]))
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <section className="w-full bg-background px-16 py-12">
+        <h2 className="mb-8 text-3xl font-bold tracking-tight text-foreground">
+          Featured Articles
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-video w-full rounded-t-xl bg-muted" />
+              <div className="p-4">
+                <div className="mb-2 h-4 w-1/3 rounded bg-muted" />
+                <div className="h-5 w-full rounded bg-muted" />
+                <div className="mt-2 h-5 w-2/3 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (articles.length === 0) return null;
 
