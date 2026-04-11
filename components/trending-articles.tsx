@@ -34,7 +34,7 @@ export function TrendingArticles({
           {articles.map((item) => (
             <Link
               key={item.id}
-              href={`/articles/${item.slug}`}
+              href={`/articles/${item.slug}/${item.id}`}
               className="group"
             >
               <Card className="h-full transition-shadow group-hover:shadow-lg">

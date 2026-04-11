@@ -67,7 +67,7 @@ export function FeaturedArticles() {
       </h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {articles.map((article) => (
-          <Link key={article.id} href={`/articles/${article.slug}`} className="group">
+          <Link key={article.id} href={`/articles/${article.slug}/${article.id}`} className="group">
             <Card className="h-full transition-shadow group-hover:shadow-lg">
               <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
                 <Image
