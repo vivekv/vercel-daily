@@ -1,19 +1,6 @@
 import { cookies } from "next/headers";
 import { SubscribeButton } from "@/components/subscribe-button";
-
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: unknown[];
-  category: string;
-  author: { name: string; avatar: string } | null;
-  image: string;
-  publishedAt: string;
-  featured: boolean;
-  tags: string[];
-}
+import type { Article } from "@/lib/article-utils";
 
 export async function ArticleBody({ article }: { article: Article }) {
   const cookieStore = await cookies();

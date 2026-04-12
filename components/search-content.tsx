@@ -11,19 +11,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  author: { name: string; avatar: string } | null;
-  image: string;
-  publishedAt: string;
-  featured: boolean;
-  tags: string[];
-}
+import type { Article } from "@/lib/article-utils";
 
 interface Pagination {
   page: number;

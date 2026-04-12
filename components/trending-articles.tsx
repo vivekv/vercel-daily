@@ -6,16 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-
-interface TrendingArticle {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  image: string;
-  publishedAt: string;
-}
+import type { TrendingArticle } from "@/lib/article-utils";
 
 export function TrendingArticles({
   articles,

@@ -1,20 +1,7 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import { ArticleBody } from "@/components/article-body";
-
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: unknown[];
-  category: string;
-  author: { name: string; avatar: string } | null;
-  image: string;
-  publishedAt: string;
-  featured: boolean;
-  tags: string[];
-}
+import type { Article } from "@/lib/article-utils";
 
 interface ArticleContentProps {
   article: Article;
