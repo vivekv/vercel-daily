@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ArticleContent } from "@/components/article-content";
 import { TrendingArticles } from "@/components/trending-articles";
+import { ArticleLoading } from "@/components/article-loading";
 import { getArticle, getTrending, getAllArticleSlugs } from "@/lib/article-utils";
 
 export async function generateStaticParams() {
@@ -66,7 +67,9 @@ export default function ArticlePage({
 }) {
   return (
     <>
-      <ArticlePageContent params={params} />
+      <Suspense fallback={<ArticleLoading />}>
+        <ArticlePageContent params={params} />
+      </Suspense>
       <Suspense>
         <TrendingSection params={params} />
       </Suspense>

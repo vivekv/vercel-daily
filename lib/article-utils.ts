@@ -25,6 +25,10 @@ export interface TrendingArticle {
 }
 
 export async function getArticle(slug: string): Promise<Article | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`article-${slug}`);
+
   const baseUrl = process.env.VERCEL_API_BASE_URL;
   const token = process.env.VERCEL_API_TOKEN;
   if (!baseUrl || !token) return null;
