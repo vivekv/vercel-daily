@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,72 +43,54 @@ export function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(searchParams.get("category") ?? "");
+  // For Persistent Search State req. using URL as source of truth
+  const qParam = searchParams.get("q") ?? "";
+  const catParam = searchParams.get("category") ?? "";
+
+  // Control and update URL params on user input
+  const [inputValue, setInputValue] = useState(qParam);
+  const [selectedCategory, setSelectedCategory] = useState(catParam);
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<{ slug: string; name: string }[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasSearched, setHasSearched] = useState(
-    !!searchParams.get("q") || !!searchParams.get("category")
-  );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updateUrl = useCallback(
-    (q: string, cat: string) => {
-      const params = new URLSearchParams();
-      if (q) params.set("q", q);
-      if (cat) params.set("category", cat);
-      const qs = params.toString();
-      router.replace(`/search${qs ? `?${qs}` : ""}`, { scroll: false });
-    },
-    [router]
-  );
+  // Navigate to new search URL (triggers the fetch effect below)
+  function updateUrl(q: string, cat: string) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (cat) params.set("category", cat);
+    const qs = params.toString();
+    router.replace(`/search${qs ? `?${qs}` : ""}`, { scroll: false });
+  }
 
-  const performSearch = useCallback(
-    async (q: string, cat: string) => {
-      setLoading(true);
-      setHasSearched(true);
-      updateUrl(q, cat);
-      try {
-        const params = new URLSearchParams();
-        if (q) params.set("search", q);
-        if (cat) params.set("category", cat);
-        params.set("limit", "5");
-        const res = await fetch(`/api/search?${params.toString()}`);
-        const data: SearchResponse = await res.json();
+  // Fetch results whenever URL params change (refresh, share, back/forward, search)
+  useEffect(() => {
+    setLoading(true);
+    // Sync input state from URL (handles browser back/forward)
+    setInputValue(qParam);
+    setSelectedCategory(catParam);
+
+    const params = new URLSearchParams();
+    if (qParam) params.set("search", qParam);
+    if (catParam) params.set("category", catParam);
+    params.set("limit", "5");
+
+    fetch(`/api/search?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data: SearchResponse) => {
         setArticles(data.articles);
         setPagination(data.pagination);
-      } catch {
-        setArticles([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [updateUrl]
-  );
+      })
+      .catch(() => setArticles([]))
+      .finally(() => setLoading(false));
+  }, [qParam, catParam]);
 
-  // Load initial results (either from URL params or default recent articles)
+  // Fetch categories on mount
   useEffect(() => {
-    const initialQ = searchParams.get("q") ?? "";
-    const initialCat = searchParams.get("category") ?? "";
-    if (initialQ || initialCat) {
-      performSearch(initialQ, initialCat);
-    } else {
-      // Load recent articles as default
-      setLoading(true);
-      fetch("/api/search?limit=5")
-        .then((res) => res.json())
-        .then((data: SearchResponse) => {
-          setArticles(data.articles);
-          setPagination(data.pagination);
-        })
-        .catch(() => setArticles([]))
-        .finally(() => setLoading(false));
-    }
-
-    // Fetch categories
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data: { slug: string; name: string }[]) => setCategories(data))
@@ -116,25 +98,27 @@ export function SearchContent() {
   }, []);
 
   const handleInputChange = (value: string) => {
-    setQuery(value);
+    setInputValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.length >= 3) {
       debounceRef.current = setTimeout(() => {
-        performSearch(value, category);
+        updateUrl(value, selectedCategory);
       }, 300);
     }
   };
 
   const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    performSearch(query, value);
+    setSelectedCategory(value);
+    updateUrl(inputValue, value);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    performSearch(query, category);
+    updateUrl(inputValue, selectedCategory);
   };
+
+  const hasSearched = !!(qParam || catParam);
 
   return (
     <div className="w-full bg-background px-16 py-12">
@@ -148,12 +132,12 @@ export function SearchContent() {
           <input
             type="search"
             placeholder="Search articles..."
-            value={query}
+            value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
             className="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/50"
           />
           <select
-            value={category}
+            value={selectedCategory}
             onChange={(e) => handleCategoryChange(e.target.value)}
             className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
           >

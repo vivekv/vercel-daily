@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { fetchArticles } from "@/lib/searchquery";
 
 export async function GET(request: NextRequest) {
-  const baseUrl = process.env.VERCEL_API_BASE_URL;
-  const token = process.env.VERCEL_API_TOKEN;
-
-  if (!baseUrl || !token) {
-    return NextResponse.json(
-      { error: "API is not configured" },
-      { status: 503 }
-    );
-  }
-
   const { searchParams } = request.nextUrl;
   const params = new URLSearchParams();
 
@@ -30,38 +21,15 @@ export async function GET(request: NextRequest) {
   const featured = searchParams.get("featured");
   if (featured) params.set("featured", featured);
 
-  //Caching the upstream request - when featured is set 
   const qs = params.toString();
-  const res = await fetch(`${baseUrl}/articles${qs ? `?${qs}` : ""}`, {
-    headers: { "x-vercel-protection-bypass": token },
-    ...(featured ? { next: { revalidate: 3600 } } : {}),
-  });
+  const data = await fetchArticles(qs);
 
-  if (!res.ok) {
+  if (!data) {
     return NextResponse.json(
       { error: "Failed to search articles" },
-      { status: res.status }
-    );
-  }
-
-  const json = await res.json();
-
-  if (!json.success) {
-    return NextResponse.json(
-      { error: "Search unavailable" },
       { status: 502 }
     );
   }
 
-  const response = NextResponse.json({
-    articles: json.data,
-    pagination: json.meta.pagination,
-  });
-
-  // Caching for all users when featured is set 
-  if (featured) {
-    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=60");
-  }
-
-  return response;
+  return NextResponse.json(data);
 }
