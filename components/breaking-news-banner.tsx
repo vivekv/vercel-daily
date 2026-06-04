@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 import Link from "next/link";
+import { cacheLife, cacheTag } from "next/cache";
 
 interface BreakingNews {
   headline: string;
@@ -13,18 +10,28 @@ interface BreakingNews {
   urgent: boolean;
 }
 
-export function BreakingNewsBanner() {
-  const [news, setNews] = useState<BreakingNews | null>(null);
+async function getBreakingNews(): Promise<BreakingNews | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("breaking-news");
 
-  useEffect(() => {
-    fetch("/api/breaking-news")
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then((data: BreakingNews | null) => setNews(data))
-      .catch(() => setNews(null));
-  }, []);
+  const baseUrl = process.env.VERCEL_API_BASE_URL;
+  const token = process.env.VERCEL_API_TOKEN;
+  if (!baseUrl || !token) return null;
+
+  const res = await fetch(`${baseUrl}/breaking-news`, {
+    headers: { "x-vercel-protection-bypass": token },
+  });
+
+  if (!res.ok) return null;
+  const json = await res.json();
+  if (!json.success) return null;
+
+  return json.data as BreakingNews;
+}
+
+export async function BreakingNewsBanner() {
+  const news = await getBreakingNews();
 
   if (!news) return null;
 
