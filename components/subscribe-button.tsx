@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/components/subscription-provider";
+import { toggleSubscription } from "@/app/actions";
 
 export function SubscribeButton({
   showUnsubscribe,
@@ -12,7 +13,7 @@ export function SubscribeButton({
   showUnsubscribe?: boolean;
   refreshOnToggle?: boolean;
 } = {}) {
-  const { subscribed, toggle } = useSubscription();
+  const { subscribed, setSubscribed } = useSubscription();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -23,12 +24,13 @@ export function SubscribeButton({
       : "Subscribe";
 
   function handleClick() {
-    toggle();
-    if (refreshOnToggle) {
-      startTransition(() => {
+    startTransition(async () => {
+      const next = await toggleSubscription();
+      setSubscribed(next);
+      if (refreshOnToggle) {
         router.refresh();
-      });
-    }
+      }
+    });
   }
 
   return (

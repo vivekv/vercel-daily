@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import { ArticleContent } from "@/components/article-content";
 import { TrendingArticles } from "@/components/trending-articles";
 import { ArticleLoading } from "@/components/article-loading";
@@ -53,8 +54,12 @@ async function ArticlePageContent({ params }: { params: Promise<{ slug: string[]
 }
 
 async function TrendingSection({ params }: { params: Promise<{ slug: string[] }> }) {
+  "use cache";
+  cacheLife("hours");
+
   const { slug } = await params;
   const articleId = slug[slug.length - 1];
+  cacheTag(`trending-section-${articleId}`);
   const trending = await getTrending(articleId);
 
   return <TrendingArticles articles={trending} />;

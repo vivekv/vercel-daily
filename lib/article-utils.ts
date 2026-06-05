@@ -66,6 +66,10 @@ export async function getTrending(exclude?: string): Promise<TrendingArticle[]> 
 }
 
 export async function getAllArticleSlugs(): Promise<{ slug: string; id: string }[]> {
+  "use cache";
+  cacheLife("days");
+  cacheTag("all-slugs");
+
   const baseUrl = process.env.VERCEL_API_BASE_URL;
   const token = process.env.VERCEL_API_TOKEN;
   if (!baseUrl || !token) return [];
@@ -82,4 +86,23 @@ export async function getAllArticleSlugs(): Promise<{ slug: string; id: string }
     slug: article.slug,
     id: article.id,
   }));
+}
+
+export async function getCategories(): Promise<{ slug: string; name: string }[]> {
+  "use cache";
+  cacheLife("days");
+  cacheTag("categories");
+
+  const baseUrl = process.env.VERCEL_API_BASE_URL;
+  const token = process.env.VERCEL_API_TOKEN;
+  if (!baseUrl || !token) return [];
+
+  const res = await fetch(`${baseUrl}/categories`, {
+    headers: { "x-vercel-protection-bypass": token },
+  });
+
+  if (!res.ok) return [];
+  const json = await res.json();
+  if (!json.success) return [];
+  return json.data as { slug: string; name: string }[];
 }

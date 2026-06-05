@@ -12,6 +12,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import type { Article } from "@/lib/article-utils";
+import { searchArticles } from "@/app/actions";
 
 interface Pagination {
   page: number;
@@ -22,12 +23,13 @@ interface Pagination {
   hasPreviousPage: boolean;
 }
 
-interface SearchResponse {
-  articles: Article[];
-  pagination: Pagination;
+interface SearchContentProps {
+  categories: { slug: string; name: string }[];
+  initialArticles: Article[];
+  initialPagination: Pagination | null;
 }
 
-export function SearchContent() {
+export function SearchContent({ categories, initialArticles, initialPagination }: SearchContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -39,10 +41,10 @@ export function SearchContent() {
   const [inputValue, setInputValue] = useState(qParam);
   const [selectedCategory, setSelectedCategory] = useState(catParam);
 
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<{ slug: string; name: string }[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [pagination, setPagination] = useState<Pagination | null>(initialPagination);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -55,41 +57,37 @@ export function SearchContent() {
     router.replace(`/search${qs ? `?${qs}` : ""}`, { scroll: false });
   }
 
-  // Fetch results whenever URL params change (refresh, share, back/forward, search)
+  // Fetch results whenever URL params or page change
   useEffect(() => {
     setLoading(true);
     // Sync input state from URL (handles browser back/forward)
     setInputValue(qParam);
     setSelectedCategory(catParam);
 
-    const params = new URLSearchParams();
-    if (qParam) params.set("search", qParam);
-    if (catParam) params.set("category", catParam);
-    params.set("limit", "5");
-
-    fetch(`/api/search?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data: SearchResponse) => {
-        setArticles(data.articles);
-        setPagination(data.pagination);
+    searchArticles({
+      search: qParam || undefined,
+      category: catParam || undefined,
+      page,
+      limit: 5,
+    })
+      .then((data) => {
+        if (data) {
+          setArticles(data.articles);
+          setPagination(data.pagination);
+        } else {
+          setArticles([]);
+        }
       })
       .catch(() => setArticles([]))
       .finally(() => setLoading(false));
-  }, [qParam, catParam]);
-
-  // Fetch categories on mount
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data: { slug: string; name: string }[]) => setCategories(data))
-      .catch(() => setCategories([]));
-  }, []);
+  }, [qParam, catParam, page]);
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.length >= 3) {
       debounceRef.current = setTimeout(() => {
+        setPage(1);
         updateUrl(value, selectedCategory);
       }, 300);
     }
@@ -97,12 +95,14 @@ export function SearchContent() {
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
+    setPage(1);
     updateUrl(inputValue, value);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    setPage(1);
     updateUrl(inputValue, selectedCategory);
   };
 
@@ -193,46 +193,98 @@ export function SearchContent() {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {articles.map((article) => (
-                  <Link
-                    key={article.id}
-                    href={`/articles/${article.slug}`}
-                    className="group"
-                  >
-                    <Card className="h-full transition-shadow group-hover:shadow-lg">
-                      <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
-                        <Image
-                          src={article.image}
-                          alt={article.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <CardHeader>
-                        <CardDescription>
-                          <span className="font-semibold text-primary">
-                            {article.category}
-                          </span>
-                          <span className="mx-2">·</span>
-                          <time dateTime={article.publishedAt}>
-                            {new Date(
-                              article.publishedAt
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </time>
-                        </CardDescription>
-                        <CardTitle className="line-clamp-2 group-hover:underline">
-                          {article.title}
-                        </CardTitle>
-                      </CardHeader>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
+              <>
+                {/* Pagination Top */}
+                {hasSearched && pagination && pagination.totalPages > 1 && (
+                  <div className="mb-6 flex items-center justify-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!pagination.hasPreviousPage}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!pagination.hasNextPage}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {articles.map((article) => (
+                    <Link
+                      key={article.id}
+                      href={`/articles/${article.slug}`}
+                      className="group"
+                    >
+                      <Card className="h-full transition-shadow group-hover:shadow-lg">
+                        <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
+                          <Image
+                            src={article.image}
+                            alt={article.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <CardHeader>
+                          <CardDescription>
+                            <span className="font-semibold text-primary">
+                              {article.category}
+                            </span>
+                            <span className="mx-2">·</span>
+                            <time dateTime={article.publishedAt}>
+                              {new Date(
+                                article.publishedAt
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </time>
+                          </CardDescription>
+                          <CardTitle className="line-clamp-2 group-hover:underline">
+                            {article.title}
+                          </CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {hasSearched && pagination && pagination.totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!pagination.hasPreviousPage}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!pagination.hasNextPage}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

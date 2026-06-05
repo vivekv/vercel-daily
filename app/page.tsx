@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import { Hero } from "@/components/hero";
 import { BreakingNewsBanner } from "@/components/breaking-news-banner";
 import { FeaturedArticles } from "@/components/featured-articles";
@@ -14,7 +15,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("homepage");
+
   return (
     <div className="flex flex-1 flex-col">
       <Suspense>

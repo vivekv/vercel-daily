@@ -31,6 +31,10 @@ async function getBreakingNews(): Promise<BreakingNews | null> {
 }
 
 export async function BreakingNewsBanner() {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("breaking-news-banner");
+
   const news = await getBreakingNews();
 
   if (!news) return null;

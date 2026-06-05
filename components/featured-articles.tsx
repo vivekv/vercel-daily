@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { cacheLife, cacheTag } from "next/cache";
 import {
   Card,
   CardHeader,
@@ -10,6 +11,10 @@ import { fetchArticles } from "@/lib/searchquery";
 import type { Article } from "@/lib/article-utils";
 
 export async function FeaturedArticles() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("featured-articles");
+
   const data = await fetchArticles("featured=true&limit=6");
   const articles: Article[] = data?.articles ?? [];
 

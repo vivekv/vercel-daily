@@ -7,14 +7,10 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-}
-
 const SubscriptionContext = createContext<{
   subscribed: boolean;
-  toggle: () => void;
-}>({ subscribed: false, toggle: () => {} });
+  setSubscribed: (value: boolean) => void;
+}>({ subscribed: false, setSubscribed: () => {} });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [subscribed, setSubscribed] = useState(false);
@@ -23,15 +19,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     setSubscribed(getCookie("vercel-daily-subscribed") === "true");
   }, []);
 
-  const toggle = useCallback(() => {
-    const next = !subscribed;
-    setCookie("vercel-daily-subscribed", String(next));
-    setSubscribed(next);
-    return next;
-  }, [subscribed]);
-
   return (
-    <SubscriptionContext value={{ subscribed, toggle }}>
+    <SubscriptionContext value={{ subscribed, setSubscribed }}>
       {children}
     </SubscriptionContext>
   );
